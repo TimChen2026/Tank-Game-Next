@@ -104,7 +104,8 @@ export default function TankGame() {
     });
   }, []);
 
-  // 保存游戏记录
+  // ==================== 保存游戏记录 ====================
+  // 游戏结束时保存记录到数据库
   const saveGameRecord = useCallback(async (result: string) => {
     if (recordSavedRef.current) return;
     recordSavedRef.current = true;
@@ -119,15 +120,15 @@ export default function TankGame() {
         });
         const data = await res.json();
         if (data.success) {
-          showNotification('您的游戏记录已经保存', 'success');
+          showNotification('您的游戏记录已经保存', 'success');    // 👈 保存成功提示
         } else {
-          showNotification('保存记录失败: ' + (data.error || '未知错误'), 'error');
+          showNotification('保存记录失败: ' + (data.error || '未知错误'), 'error');  // 👈 保存失败提示
         }
       } catch {
-        showNotification('网络错误，记录未保存', 'error');
+        showNotification('网络错误，记录未保存', 'error');         // 👈 网络错误提示
       }
     } else {
-      showNotification('登录后可保存你的游戏记录', 'warning');
+      showNotification('登录后可保存你的游戏记录', 'warning');    // 👈 未登录提示
     }
   }, [showNotification]);
 
@@ -453,43 +454,49 @@ export default function TankGame() {
     ctx.beginPath(); ctx.arc(cx, cy, Math.max(r, 1), 0, Math.PI * 2); ctx.fill();
   }, []);
 
+  // ==================== HUD 界面绘制 ====================
+  // 显示游戏顶部的生命、敌人数量、得分
   const drawHUD = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, MAP_W, 20);
     ctx.fillStyle = C.white; ctx.font = '12px monospace';
-    ctx.textAlign = 'left'; ctx.fillText('生命: ' + (playerRef.current ? playerRef.current.lives : 0), 4, 14);
-    ctx.textAlign = 'center'; ctx.fillText('敌人: ' + (TOTAL_ENEMIES - enemiesKilledRef.current), MAP_W / 2, 14);
-    ctx.textAlign = 'right'; ctx.fillText('得分: ' + enemiesKilledRef.current * 100, MAP_W - 4, 14);
+    ctx.textAlign = 'left'; ctx.fillText('生命: ' + (playerRef.current ? playerRef.current.lives : 0), 4, 14);      // 👈 生命值显示
+    ctx.textAlign = 'center'; ctx.fillText('敌人: ' + (TOTAL_ENEMIES - enemiesKilledRef.current), MAP_W / 2, 14);  // 👈 敌人数量显示
+    ctx.textAlign = 'right'; ctx.fillText('得分: ' + enemiesKilledRef.current * 100, MAP_W - 4, 14);               // 👈 得分显示
   }, []);
 
+  // ==================== 游戏菜单绘制 ====================
+  // 游戏开始前的主菜单画面
   const drawMenu = useCallback((ctx: CanvasRenderingContext2D, frameCount: number) => {
     ctx.fillStyle = C.black; ctx.fillRect(0, 0, MAP_W, MAP_H);
     ctx.fillStyle = C.white; ctx.font = 'bold 28px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('坦克大战', MAP_W / 2, MAP_H / 2 - 60);
+    ctx.fillText('Tank Game 坦克大战', MAP_W / 2, MAP_H / 2 - 60);                // 👈 游戏标题
     ctx.font = '14px monospace'; ctx.fillStyle = C.brick;
-    ctx.fillText('BATTLE CITY', MAP_W / 2, MAP_H / 2 - 30);
+    ctx.fillText('Classic Game 经典游戏', MAP_W / 2, MAP_H / 2 - 30);            // 👈 英文副标题
     ctx.fillStyle = C.white; ctx.font = '14px monospace';
-    if (Math.floor(frameCount / 30) % 2 === 0) ctx.fillText('按 ENTER 或点击开始', MAP_W / 2, MAP_H / 2 + 30);
+    if (Math.floor(frameCount / 30) % 2 === 0) ctx.fillText('按 ENTER 或点击开始', MAP_W / 2, MAP_H / 2 + 30);  // 👈 开始提示（闪烁）
     ctx.font = '11px monospace'; ctx.fillStyle = C.gray;
-    ctx.fillText('WASD/方向键 移动 | 空格 射击', MAP_W / 2, MAP_H / 2 + 70);
-    ctx.fillText('手机端使用虚拟按键', MAP_W / 2, MAP_H / 2 + 90);
+    ctx.fillText('WASD/方向键 移动 | 空格 射击', MAP_W / 2, MAP_H / 2 + 70);   // 👈 键盘操作提示
+    ctx.fillText('手机端使用虚拟按键', MAP_W / 2, MAP_H / 2 + 90);              // 👈 手机操作提示
   }, []);
 
+  // ==================== 游戏失败画面绘制 ====================
   const drawGameOver = useCallback((ctx: CanvasRenderingContext2D, frameCount: number) => {
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, MAP_W, MAP_H);
     ctx.fillStyle = C.enemy; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', MAP_W / 2, MAP_H / 2 - 10);
+    ctx.fillText('GAME OVER', MAP_W / 2, MAP_H / 2 - 10);              // 👈 失败标题
     ctx.fillStyle = C.white; ctx.font = '14px monospace';
-    ctx.fillText('得分: ' + enemiesKilledRef.current * 100, MAP_W / 2, MAP_H / 2 + 20);
-    if (Math.floor(frameCount / 30) % 2 === 0) ctx.fillText('按 ENTER 重新开始', MAP_W / 2, MAP_H / 2 + 50);
+    ctx.fillText('得分: ' + enemiesKilledRef.current * 100, MAP_W / 2, MAP_H / 2 + 20);  // 👈 最终得分
+    if (Math.floor(frameCount / 30) % 2 === 0) ctx.fillText('按 ENTER 重新开始', MAP_W / 2, MAP_H / 2 + 50);  // 👈 重试提示
   }, []);
 
+  // ==================== 游戏胜利画面绘制 ====================
   const drawVictory = useCallback((ctx: CanvasRenderingContext2D, frameCount: number) => {
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, MAP_W, MAP_H);
     ctx.fillStyle = C.base; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('胜利!', MAP_W / 2, MAP_H / 2 - 10);
+    ctx.fillText('胜利!', MAP_W / 2, MAP_H / 2 - 10);                  // 👈 胜利标题
     ctx.fillStyle = C.white; ctx.font = '14px monospace';
-    ctx.fillText('得分: ' + enemiesKilledRef.current * 100, MAP_W / 2, MAP_H / 2 + 20);
-    if (Math.floor(frameCount / 30) % 2 === 0) ctx.fillText('按 ENTER 重新开始', MAP_W / 2, MAP_H / 2 + 50);
+    ctx.fillText('得分: ' + enemiesKilledRef.current * 100, MAP_W / 2, MAP_H / 2 + 20);  // 👈 最终得分
+    if (Math.floor(frameCount / 30) % 2 === 0) ctx.fillText('按 ENTER 重新开始', MAP_W / 2, MAP_H / 2 + 50);  // 👈 重试提示
   }, []);
 
   // 游戏循环
