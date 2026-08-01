@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function NavBar() {
-  const [user, setUser] = useState<{ loggedIn: boolean; username?: string } | null>(null);
+  const [user, setUser] = useState<{ loggedIn: boolean; username?: string; verified?: boolean } | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboard, setLeaderboard] = useState<Array<{ username: string; best_score: number; games_played: number }>>([]);
   const [lbLoading, setLbLoading] = useState(false);
@@ -62,6 +62,14 @@ export default function NavBar() {
               <a href="/profile" style={{ color: '#8a8aaa', fontSize: 14, textDecoration: 'none' }}>个人中心</a>
               {/* 👈 用户名显示 */}
               <span style={{ color: '#8a8aaa', fontSize: 13 }}>指挥官: <span style={{ color: '#fc9838' }}>{user.username}</span></span>
+              {/* 👈 人机验证状态徽章 */}
+              {user.verified && (
+                <span style={{
+                  color: '#8aff8a', fontSize: 11, fontFamily: "'Courier New', monospace",
+                  background: '#1a3a1a', border: '1px solid #4a8a4a', padding: '2px 8px',
+                  borderRadius: 3, fontWeight: 'bold',
+                }} title="此账号已通过人机验证">✓ 已验证</span>
+              )}
               {/* 👈 退出登录按钮 */}
               <button onClick={handleLogout} style={{
                 background: 'none', border: '1px solid #4a4a6a', color: '#8a8aaa',

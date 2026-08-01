@@ -8,6 +8,7 @@ const SECRET = new TextEncoder().encode(
 export interface SessionPayload {
   userId: number;
   username: string;
+  verified?: boolean; // 是否通过人机验证
 }
 
 export async function createToken(payload: SessionPayload): Promise<string> {

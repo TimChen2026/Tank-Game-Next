@@ -88,6 +88,8 @@ export default function TankGame() {
 
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'warning' | 'error' } | null>(null);
   const notifTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 👈 游戏开始前的登录/验证提示弹窗
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const showNotification = useCallback((message: string, type: 'success' | 'warning' | 'error') => {
     setNotification({ message, type });
@@ -355,7 +357,24 @@ export default function TankGame() {
     p.invincible = INVINCIBLE_TIME; p.shootCooldown = 0;
   }, []);
 
-  const initGame = useCallback(() => {
+  const initGame = useCallback(async () => {
+    // ==================== 游戏开始前验证 ====================
+    // 确认有没有签发带 verified 的 JWT
+    // 如果有 → 正常进入游戏；如果没有 → 提示登录或注册
+    try {
+      const res = await fetch('/api/me');
+      const data = await res.json();
+      if (!data.loggedIn || !data.verified) {
+        setShowAuthPrompt(true);
+        return; // 验证未通过，不开始游戏
+      }
+      isLoggedInRef.current = true;
+    } catch {
+      setShowAuthPrompt(true);
+      return;
+    }
+
+    // 验证通过，开始初始化游戏
     mapRef.current = cloneMap();
     mapRef.current[11][5] = B; mapRef.current[11][6] = B; mapRef.current[11][7] = B;
     mapRef.current[12][5] = B; mapRef.current[12][7] = B;
@@ -699,6 +718,41 @@ export default function TankGame() {
           color: notification.type === 'success' ? '#8aff8a' : notification.type === 'warning' ? '#fc9838' : '#ff6a6a',
         }}>
           {notification.message}
+        </div>
+      )}
+
+      {/* ==================== 游戏开始前的登录/注册提示弹窗 ==================== */}
+      {showAuthPrompt && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.8)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 10001,
+        }}>
+          <div style={{
+            background: '#0f0f23', border: '3px solid #c84c0c', padding: '32px 28px',
+            width: '100%', maxWidth: 360, borderRadius: 4, textAlign: 'center',
+          }}>
+            <h2 style={{ color: '#fc9838', fontSize: 22, marginBottom: 12, fontFamily: "'Courier New', monospace", letterSpacing: 4 }}>需要验证</h2>
+            <p style={{ color: '#8a8aaa', fontSize: 14, fontFamily: "'Courier New', monospace", marginBottom: 24, lineHeight: 1.6 }}>
+              请先登录或注册完成人机验证后，才能开始游戏
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <a href="/login" style={{
+                background: '#6a4a1a', color: '#fc9838', border: '2px solid #c84c0c',
+                padding: '10px 20px', fontSize: 14, fontFamily: "'Courier New', monospace",
+                fontWeight: 'bold', letterSpacing: 2, textDecoration: 'none', borderRadius: 3,
+              }}>去登录</a>
+              <a href="/register" style={{
+                background: '#3a3a4a', color: '#8a8aaa', border: '2px solid #4a4a6a',
+                padding: '10px 20px', fontSize: 14, fontFamily: "'Courier New', monospace",
+                fontWeight: 'bold', letterSpacing: 2, textDecoration: 'none', borderRadius: 3,
+              }}>去注册</a>
+            </div>
+            <button onClick={() => setShowAuthPrompt(false)} style={{
+              background: 'none', border: 'none', color: '#6a6a8a', fontSize: 12,
+              fontFamily: "'Courier New', monospace", cursor: 'pointer', marginTop: 16,
+            }}>关闭</button>
+          </div>
         </div>
       )}
     </>
