@@ -10,6 +10,7 @@
     "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.5.4",
     "bcryptjs": "^2.4.3",
     "jose": "^6.2.4",
     "next": "^15.3.0",

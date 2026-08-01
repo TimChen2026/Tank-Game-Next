@@ -2,21 +2,31 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  // 👈 人机验证 token
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // 👈 前端再次确认人机验证已完成
+    if (!turnstileToken) {
+      setError('请先完成人机验证');
+      return;
+    }
+
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify({ username: username.trim(), password, turnstileToken }),
       });
       const data = await res.json();
       if (data.success) {
@@ -65,12 +75,29 @@ export default function LoginPage() {
               }}
             />
           </div>
+
+          {/* ==================== 人机验证组件 ==================== */}
+          <div style={{ display: 'flex', justifyContent: 'center', minHeight: 65 }}>
+            <Turnstile
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setError('人机验证失败，请重试')}
+            />
+          </div>
+
           <div style={{ color: '#e74c3c', fontSize: 13, minHeight: 18, fontFamily: "'Courier New', monospace" }}>{error}</div>
-          <button type="submit" style={{
-            background: '#6a4a1a', color: '#fc9838', border: '2px solid #c84c0c',
-            padding: 12, fontSize: 16, fontFamily: "'Courier New', monospace",
-            fontWeight: 'bold', letterSpacing: 4, cursor: 'pointer', borderRadius: 3,
-          }}>登录</button>
+          <button
+            type="submit"
+            disabled={!turnstileToken}
+            style={{
+              background: turnstileToken ? '#6a4a1a' : '#3a3a4a',
+              color: turnstileToken ? '#fc9838' : '#6a6a8a',
+              border: '2px solid #c84c0c',
+              padding: 12, fontSize: 16, fontFamily: "'Courier New', monospace",
+              fontWeight: 'bold', letterSpacing: 4, cursor: turnstileToken ? 'pointer' : 'not-allowed',
+              borderRadius: 3,
+            }}>登录</button>
         </form>
         <p style={{ textAlign: 'center', color: '#6a6a8a', fontSize: 13, marginTop: 20, fontFamily: "'Courier New', monospace" }}>
           还没有账号？<a href="/register" style={{ color: '#fc9838', textDecoration: 'none' }}>立即注册</a>
