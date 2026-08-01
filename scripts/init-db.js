@@ -41,6 +41,12 @@ async function initDB() {
     `);
     console.log('users.verified 字段迁移成功');
 
+    // 迁移：为已存在的 users 表添加 email 字段（用户邮箱，用于发送欢迎邮件）
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+    `);
+    console.log('users.email 字段迁移成功');
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS game_records (
         id SERIAL PRIMARY KEY,

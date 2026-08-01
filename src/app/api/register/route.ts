@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { createToken } from '@/lib/auth';
+import { sendWelcomeEmail } from '@/lib/email';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   // ==================== 1. 人机验证（Turnstile）====================
   // 从请求体中拿到前端传来的 Turnstile token
-  const { turnstileToken, username, password } = await request.json();
+  const { turnstileToken, username, email, password } = await request.json();
 
   // 如果没有 token，直接拒绝
   if (!turnstileToken) {
@@ -31,8 +32,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ==================== 2. 参数校验 ====================
-  if (!username || !password) {
-    return NextResponse.json({ error: '用户名和密码不能为空' }, { status: 400 });
+  if (!username || !password || !email) {
+    return NextResponse.json({ error: '用户名、邮箱和密码不能为空' }, { status: 400 });
   }
   if (username.length < 2 || username.length > 50) {
     return NextResponse.json({ error: '用户名长度需在2-50之间' }, { status: 400 });
@@ -40,18 +41,30 @@ export async function POST(request: NextRequest) {
   if (password.length < 6) {
     return NextResponse.json({ error: '密码长度至少6位' }, { status: 400 });
   }
+  // 简单的邮箱格式校验
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: '邮箱格式不正确' }, { status: 400 });
+  }
 
   // ==================== 3. 写入数据库（人机验证已通过，记录 verified=true）====================
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      'INSERT INTO users (username, password, verified) VALUES ($1, $2, true) RETURNING id, username',
-      [username, hashedPassword]
+      'INSERT INTO users (username, email, password, verified) VALUES ($1, $2, $3, true) RETURNING id, username, email',
+      [username, email, hashedPassword]
     );
 
     const user = result.rows[0];
     // 签发带 verified 标记的 JWT
     const token = await createToken({ userId: user.id, username: user.username, verified: true });
+
+    // ==================== 4. 注册成功后发送欢迎邮件（失败不影响注册）====================
+    try {
+      await sendWelcomeEmail(user.email, user.username);
+    } catch (emailError) {
+      console.error('欢迎邮件发送失败：', emailError);
+      // 不 throw，不影响注册流程
+    }
 
     const response = NextResponse.json({ success: true, username: user.username });
     response.cookies.set('token', token, {

@@ -6,6 +6,7 @@ import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -31,7 +32,12 @@ export default function RegisterPage() {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password, turnstileToken }),
+        body: JSON.stringify({
+          username: username.trim(),
+          email: email.trim(),
+          password,
+          turnstileToken,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -61,6 +67,19 @@ export default function RegisterPage() {
             <input
               type="text" value={username} onChange={(e) => setUsername(e.target.value)}
               required autoComplete="username" placeholder="2-50个字符" minLength={2} maxLength={50}
+              style={{
+                background: '#1a1a2e', border: '2px solid #4a4a6a', color: '#e0e0e0',
+                padding: '10px 12px', fontSize: 15, fontFamily: "'Courier New', monospace",
+                borderRadius: 3, outline: 'none',
+              }}
+            />
+          </div>
+          {/* 👈 邮箱输入框，用于发送欢迎邮件 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ color: '#8a8aaa', fontSize: 13, fontFamily: "'Courier New', monospace" }}>邮箱</label>
+            <input
+              type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              required autoComplete="email" placeholder="用于接收欢迎邮件"
               style={{
                 background: '#1a1a2e', border: '2px solid #4a4a6a', color: '#e0e0e0',
                 padding: '10px 12px', fontSize: 15, fontFamily: "'Courier New', monospace",
